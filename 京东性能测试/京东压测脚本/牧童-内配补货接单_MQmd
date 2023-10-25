@@ -1,0 +1,196 @@
+```java
+import com.jd.forcebot.engine.TestUtils;
+import com.jd.forcebot.engine.groovy.Lifecycle;
+import com.jd.forcebot.engine.groovy.RatePolicy;
+import com.jd.forcebot.engine.groovy.TestCase;
+import com.jd.forcebot.engine.groovy.TestSuite;
+import com.jd.forcebot.toolkit.parameterized.latest.AsciiFileAccessCircularly;
+import com.jd.jmq.client.connection.ClusterTransportManager;
+import com.jd.jmq.client.connection.TransportConfig;
+import com.jd.jmq.client.connection.TransportManager;
+import com.jd.jmq.client.producer.MessageProducer;
+import com.jd.jmq.common.message.Message;
+import com.jd.jmq.common.network.command.Acknowledge;
+import com.jd.jmq.client.producer.ProducerConfig;
+import org.junit.Assert;
+import org.slf4j.Logger;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import com.jd.forcebot.toolkit.parameterized.latest.AsciiFileAccessArbitrarily;
+import com.jd.forcebot.toolkit.parameterized.latest.AsciiFileAccessCommonArbitrarily;
+
+@TestSuite(lifecycle = Lifecycle.THREAD, ratePolicy = RatePolicy.STANDARD)
+class ProducterMessageTest {
+
+    private static final Logger logger = TestUtils.LOGGER;
+    private static TransportManager manager;
+    private static MessageProducer producer;
+    
+    //测试环境
+    //private static String topic = "trans_order_to_mini";
+    //private static String address = "test-nameserver.jmq.jd.local:50088";
+    //private static String app = "WMS";
+    
+    //预发环境
+    private static String topic = "trans_order_to_mini_uat";
+    private static String address = "nameserver.jmq.jd.local:80";
+    private static String app = "miniwms";
+    
+    private static String messagebody = "";
+    //private static AsciiFileAccessCircularly ibcCollectOrderReceiveListenerData = new AsciiFileAccessCircularly("IbcCollectOrderReceiveListener_data.txt");
+    static AsciiFileAccessCommonArbitrarily atomicAccess = new  AsciiFileAccessCommonArbitrarily("IbcCollectOrderReceiveListener_data.txt");
+
+    static {
+        try {
+            logger.info(messagebody);
+            //连接配置
+            TransportConfig config = new TransportConfig();
+            
+            
+            //测试环境
+            
+            //设置broker地址
+            //config.setAddress("test-nameserver.jmq.jd.local:50088");
+            //设置用户名
+           // config.setUser("WMS");
+            //设置密码
+            //config.setPassword("4433efe5411b45fc892d0d5fc4f7912d");
+            //config.setApp("WMS");
+            
+            //预发环境
+            //设置broker地址
+            config.setApp("miniwms");
+            config.setAddress("nameserver.jmq.jd.local:80");
+            //设置用户名
+            config.setUser("miniwms");
+            //设置密码
+            config.setPassword("db17b6f440064db98644a9ee9d6141dd");
+            
+            //设置发送超时
+            config.setSendTimeout(10000);
+            //设置是否使用epoll模式，windows环境下设置为false，linux环境下设置为true
+            config.setEpoll(false);
+            //创建集群连接管理器
+            manager = new ClusterTransportManager(config);
+            manager.start();
+            //创建发送者
+            producer = new MessageProducer(manager);
+            ProducerConfig conf = new ProducerConfig();
+            conf.setAcknowledge(Acknowledge.ACK_FLUSH);
+            producer.setConfig(conf);
+            producer.start();
+        } catch (Exception e) {
+            logger.error("连接mq出现问题："e.getMessage())
+            e.printStackTrace();
+        }
+    }
+
+    @TestCase
+    void test() {
+        //to对应miniwms_master.mini_warehouse.distribution_no,toSid对应miniwms_master.mini_warehouse.mini_warehouse_no
+        //ibcCollectOrderReceiveListenerData依次为to,toSid
+        //String ibcCollectOrderReceiveListenerData = ibcCollectOrderReceiveListenerData.readLine();
+        
+        //String[] ibcCollectOrderReceiveListenerData = (atomicAccess.readLine()).split(",");
+        //String to=(atomicAccess.readLine()).split(",")[0];
+        //String toSid=(atomicAccess.readLine()).split(",")[1];
+        String numb=String.valueOf(getRandomNumberInRange(20,30));
+        //logger.info("当前获取的配送中心distribution_no,to:{}",to);
+        //logger.info("当前获取的移动仓库编号mini_warehouse_no,toSid:{}",toSid);
+        logger.info("当前商品件数numb:{}",numb);
+        
+        
+        int rfidType=(int) (Math.random() * (5 - 1 + 1)) + 1;
+        logger.info("当前rfidType类型:{}",rfidType);
+        long rfidTemp = System.currentTimeMillis();
+        long rfid;
+        if(rfidType == 1){
+            rfid = rfidTemp - 1000;
+        }else if (rfidType == 2){
+            rfid = rfidTemp - 2000;
+        }else if (rfidType == 3){
+            rfid = rfidTemp - 3000;
+        }else if (rfidType == 4){
+            rfid = rfidTemp - 4000;
+        }else if (rfidType == 5){
+            rfid = rfidTemp - 5000;
+        }
+        logger.info("订单号rfid:{}",rfid);
+        
+        //logger.info("to:{}",ibcCollectOrderReceiveListenerData.split(",")[0]);
+        //logger.info("toSid:{}",ibcCollectOrderReceiveListenerData.split(",")[1]);
+        //刷盘后应答 ACK_FLUSH
+        //接收到数据应答 ACK_RECEIVE
+        
+        //to对应wms_distribution,toSid对应mini_warehouse_no,from对应wms_org_no,startSid对应wms_warehouse_no
+        //压消费者，报文是消费者
+        try {
+            messagebody="<?xml version=\"1.0\" encoding=\"utf-16\"?>\n" +
+                "<PeiHuoDan\n" +
+                "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "    xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n" +
+                "    <taskId>eab71267-df4a-4529-9c9b-499d0728abb7</taskId>\n" +
+                //"    <rfid>2023041200002</rfid>\n" +
+                "    <rfid>"+rfid+"</rfid>\n" +
+                "    <storeProperty>0</storeProperty>\n" +
+                //"    <from>1</from>\n" +
+                "    <from>6</from>\n" +
+                //"    <to>"+to+"</to>\n" +
+                "    <to>364</to>\n" +
+                //"    <startSid>129</startSid>\n" +
+                "    <startSid>9500</startSid>\n" +
+                //"    <toSid>"+toSid+"</toSid>\n" +
+                "    <toSid>2020253</toSid>\n" +
+                "    <operatorName>shiguoan</operatorName>\n" +
+                "    <ywtype>G4</ywtype>\n" +
+                "    <skuType>channel2</skuType>\n" +
+                "    <subtype>8</subtype>\n" +
+                "    <innerboxno></innerboxno>\n" +
+                "    <isMiniTransport></isMiniTransport>\n" +
+                "    <crossDockingType>1</crossDockingType>\n" +
+                "\t<specifiedWid>1</specifiedWid>\n" +
+                "    <wid>199020230412012</wid>\n" +
+                "    <vendorType>-1</vendorType>\n" +
+                "    <vendorId>-1</vendorId>\n" +
+                "    <qingdanlist>\n" +
+                "\t\t<ChuordersBase>\n" +
+                //"            <wareid>ZX001</wareid>\n" +
+                "            <wareid>4726769211</wareid>\n" +
+                "            <wname>德亚（Weidendorf）德国原装进口全脂纯牛奶早餐奶高钙1L*12盒整箱装优质蛋白质</wname>\n" +
+                "            <numb>"+numb+"</numb>\n" +
+                "        </ChuordersBase>\n" +
+                "    </qingdanlist>\n" +
+                "    <RequestContext>\n" +
+                "        <bu>301</bu>\n" +
+                "        <language>zh</language>\n" +
+                "        <timeZone>GMT+8</timeZone>\n" +
+                "    </RequestContext>\n" +
+                "    <profitLossId>1001</profitLossId>\n" +
+                "    <lineType>30</lineType>\n" +
+                "</PeiHuoDan>\n" +
+                " ";
+            Message message = new Message(topic, "" + 1, "businessId" + 1);
+            message.setBody(messagebody.getBytes());
+            TestUtils.transactionBegin("createBill");
+            producer.send(message);
+            TestUtils.transactionSuccess("createBill");
+            logger.info("JMQ执行成功！报文如下\n"+messagebody);
+        } catch (Exception e) {
+            logger.error("exception e={}, id={}", e, id);
+            Assert.assertTrue(false)
+            TestUtils.transactionFailure("createBill");
+            logger.error("JMQ执行异常！");
+        }
+    }
+    private static int getRandomNumberInRange(int min, int max) {
+		if (min >= max) {
+			throw new IllegalArgumentException("max must be greater than min");
+		}
+		return new Random().nextInt((max - min) + 1) + min;
+	}
+}
+```
+
