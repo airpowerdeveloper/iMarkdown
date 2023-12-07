@@ -319,7 +319,7 @@ select brand_id,brand_name from  ds_brand_system where app_id=? and define_id=? 
 
 7、严禁使用%前缀进行模糊前缀查询:如：`select a,b,c from t_name where a like ‘%name’`; 可以使用%模糊后缀查询如：`select a,b from t_name where a like ‘name%’`;
 
-![图片](./Untitled.assets/640.png)
+![图片](./MySQL 团队开发规范.assets/640.png)
 
 8、避免使用子查询，可以把子查询优化为join操作
 
