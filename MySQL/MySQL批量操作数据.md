@@ -50,28 +50,13 @@ WHERE id between 3029725859 and 3029730858;
 ```mysql
 UPDATE `rd_wms`.`storage_inventory`
 SET id_location= case
-
                      when id%6=0 then 'BN_YC-YJ-0404'
-
                      when id%6=1 then 'BN_YC-YJ-0403'
-
                      when id%6=2 then 'BN_YC-YJ-0402'
-
                      when id%6=3 then 'BN_YC-YJ-0401'
-
                      when id%6=4 then 'BN_YC-YJ-0404'
-
                      when id%6=5 then 'BN_YC-YJ-0403'
-
-                     when id%6=6 then 'BN_YC-YJ-0402'
-
-                     when id%6=7 then 'BN_YC-YJ-0401'
-
-                     when id%6=8 then 'BN_YC-YJ-0402'
-
-                     when id%6=9 then 'BN_YC-YJ-0401'
     END
-
 WHERE id between 3029725859 and 3029730858;
 ```
 
